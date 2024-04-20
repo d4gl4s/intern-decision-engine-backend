@@ -13,7 +13,6 @@
     - [4. Implementation of `getCreditModifier()`](#4-implementation-of-getcreditmodifier-method)
 - [Most important shortcoming of TICKET-101](#most-important-shortcoming-of-ticket-101)
   - [The fix](#the-fix)
-  - [The optimized fix - O(log n)](#the-optimized-fix---olog-n)
 
 # Feedback for intern
 
