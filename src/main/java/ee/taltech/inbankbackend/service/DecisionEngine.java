@@ -2,11 +2,11 @@ package ee.taltech.inbankbackend.service;
 
 import com.github.vladislavgoltjajev.personalcode.locale.estonia.EstonianPersonalCodeValidator;
 import ee.taltech.inbankbackend.config.DecisionEngineConstants;
-import ee.taltech.inbankbackend.exceptions.InvalidLoanAmountException;
-import ee.taltech.inbankbackend.exceptions.InvalidLoanPeriodException;
-import ee.taltech.inbankbackend.exceptions.InvalidPersonalCodeException;
-import ee.taltech.inbankbackend.exceptions.NoValidLoanException;
+import ee.taltech.inbankbackend.exceptions.*;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.Period;
 
 /**
  * A service class that provides a method for calculating an approved loan amount and period for a customer.
@@ -37,17 +37,16 @@ public class DecisionEngine {
      */
     public Decision calculateApprovedLoan(String personalCode, Long loanAmount, int loanPeriod)
             throws InvalidPersonalCodeException, InvalidLoanAmountException, InvalidLoanPeriodException,
-            NoValidLoanException {
+            NoValidLoanException, InvalidAgeException{
+
         verifyInputs(personalCode, loanAmount, loanPeriod);
+        verifyAge(personalCode);
 
         int outputLoanAmount;
         creditModifier = getCreditModifier(personalCode);
+        if (creditModifier == 0) throw new NoValidLoanException("No valid loan found!");
 
-        if (creditModifier == 0) {
-            throw new NoValidLoanException("No valid loan found!");
-        }
-
-        int highestAmount = highestValidLoanAmount(loanPeriod);
+        int highestAmount = highestValidLoanAmount(loanPeriod); // Calculate the highest approved loan amount for provided period
 
         while (highestAmount < DecisionEngineConstants.MINIMUM_LOAN_AMOUNT && loanPeriod <= DecisionEngineConstants.MAXIMUM_LOAN_PERIOD) {
             loanPeriod++;
@@ -59,12 +58,11 @@ public class DecisionEngine {
             throw new NoValidLoanException("No valid loan found!");
 
         outputLoanAmount = Math.min(DecisionEngineConstants.MAXIMUM_LOAN_AMOUNT, highestValidLoanAmount(loanPeriod));
-
         return new Decision(outputLoanAmount, loanPeriod, null);
     }
 
     /**
-     * Calculates the largest valid loan for the current credit modifier and loan period.
+     * Calculates the largest valid loan for the current credit modifier and loan period using binary search.
      *
      * @return Largest valid loan amount
      */
@@ -72,11 +70,9 @@ public class DecisionEngine {
         int high = DecisionEngineConstants.MAXIMUM_LOAN_AMOUNT;
         int low = DecisionEngineConstants.MINIMUM_LOAN_AMOUNT;
         double creditScore;
-
-        // Binary search on sorted loan amounts
         int result = 0;
 
-        while (low <= high) {
+        while (low <= high) { // Binary search for the highest amount
             int mid = low + (high - low) / 2;
             creditScore = calculateCreditScore(mid, loanPeriod);
 
@@ -96,7 +92,6 @@ public class DecisionEngine {
     private double calculateCreditScore(int loanAmount, int loanPeriod){
         return ((double)creditModifier/loanAmount)*loanPeriod;
     }
-
 
     /**
      * Calculates the credit modifier of the customer to according to the last four digits of their ID code.
@@ -120,10 +115,16 @@ public class DecisionEngine {
         return DecisionEngineConstants.SEGMENT_3_CREDIT_MODIFIER;
     }
 
-    private int extractLastFourDigits(String personalCode) {
+    /**
+     * Extracts the last four digits from the provided personal code.
+     *
+     * @param personalCode The personal code of the customer.
+     * @return The last four digits of the personal code as an integer.
+     * @throws NumberFormatException If the substring cannot be parsed as an integer.
+     */
+    private int extractLastFourDigits(String personalCode) throws NumberFormatException {
         return Integer.parseInt(personalCode.substring(personalCode.length() - 4));
     }
-
 
     /**
      * Verify that all inputs are valid according to business rules.
@@ -149,13 +150,71 @@ public class DecisionEngine {
             throw new InvalidLoanPeriodException("Invalid loan period!");
     }
 
+    /**
+     * Checks if the provided loan amount is within the valid range.
+     *
+     * @param loanAmount The loan amount to be validated.
+     * @return {@code true} if the loan amount is within the valid range, {@code false} otherwise.
+     */
     private boolean isLoanAmountValid(Long loanAmount) {
         return DecisionEngineConstants.MINIMUM_LOAN_AMOUNT <= loanAmount
                 && loanAmount <= DecisionEngineConstants.MAXIMUM_LOAN_AMOUNT;
     }
 
+    /**
+     * Checks if the provided loan period is within the valid range.
+     *
+     * @param loanPeriod The loan period to be validated.
+     * @return {@code true} if the loan period is within the valid range, {@code false} otherwise.
+     */
     private boolean isLoanPeriodValid(int loanPeriod) {
         return DecisionEngineConstants.MINIMUM_LOAN_PERIOD <= loanPeriod
                 && loanPeriod <= DecisionEngineConstants.MAXIMUM_LOAN_PERIOD;
     }
+
+    /**
+     * Verifies if the age derived from the provided personal code falls within the acceptable range for loan eligibility.
+     *
+     * @param personalCode The personal code of the customer.
+     * @throws InvalidAgeException If the age derived from the personal code is not within the acceptable range.
+     */
+    private void verifyAge(String personalCode) throws InvalidAgeException {
+        // Since we currently have no way of differentiating countries, the expected age is the same for all.
+        int minimumAge = 18;
+        int maximumAge = DecisionEngineConstants.EXPECTED_AGE - DecisionEngineConstants.MAXIMUM_LOAN_PERIOD / 12;
+
+        int customerAge = findAge(personalCode);
+        if (customerAge < minimumAge || customerAge > maximumAge)
+            throw new InvalidAgeException("Invalid age for taking out loan.");
+    }
+
+    /**
+     * Calculates the age of the customer based on the provided personal code.
+     *
+     * @param personalCode The personal code of the customer.
+     * @return The age of the customer.
+     */
+    private int findAge(String personalCode) {
+        LocalDate birthDate = parseBirthDate(personalCode);
+        LocalDate currentDate = LocalDate.now();
+
+        return Period.between(birthDate, currentDate).getYears();
+    }
+
+    /**
+     * Parses the birthdate of the customer from the provided personal code.
+     *
+     * @param personalCode The personal code of the customer.
+     * @return The birthdate of the customer.
+     */
+    private LocalDate parseBirthDate(String personalCode) {
+        char centuryChar = personalCode.charAt(0);
+        int century = (centuryChar == '5' || centuryChar == '6') ? 2000 : 1900;
+        int birthYear = Integer.parseInt(personalCode.substring(1, 3)) + century;
+        int birthMonth = Integer.parseInt(personalCode.substring(3, 5));
+        int birthDay = Integer.parseInt(personalCode.substring(5, 7));
+
+        return LocalDate.of(birthYear, birthMonth, birthDay);
+    }
+
 }
