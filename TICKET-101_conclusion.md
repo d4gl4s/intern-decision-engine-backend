@@ -1,13 +1,17 @@
 # Ticket 101 conclusion
 
-
+**Note:** I was not sure, if we had to correct the code the intern provided or not, so I decided to do so just in case. References to old code snippets along with the changed code examples can be found in this file.
 
 ## Table of Contents
 
 - [Feedback for intern](#feedback-for-intern)
-  - [What went well?](#what-went-well)
-  - [Places for improvement](#places-for-improvement)
-- [Most important shortcoming of TICKET-101](#most-importand-shortcoming-of-ticket-101)
+  - [What went well?](#what-went-well-)
+  - [Places for improvement](#places-for-improvement-)
+    - [1. Catching exceptions in `calculateApprovedLoan()`](#1-catching-exceptions-in-calculateapprovedloan-method)
+    - [2. Unnecessary looping in `calculateApprovedLoan()`](#2-can-break-out-of-while-loop-sooner-in-calculateapprovedloan-method)
+    - [3. Checking loanAmount and loanPeriod In the `verifyInputs()`](#3-checking-loanamount-and-loanperiod-in-the-verifyinputs-method)
+    - [4. Implementation of `getCreditModifier()`](#4-implementation-of-getcreditmodifier-method)
+- [Most important shortcoming of TICKET-101](#most-important-shortcoming-of-ticket-101)
 
 # Feedback for intern
 
