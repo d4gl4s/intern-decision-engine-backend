@@ -1,6 +1,6 @@
 # Ticket 101 conclusion
 
-**Note:** I was not sure, if we had to correct the code the intern provided or not, so I decided to do so just in case. References to old code snippets along with the changed code examples can be found in this file.
+**Note:** I was not sure, if we had to correct the code the intern provided or not, so I decided to do so just in case. References to old code snippets along with the changed code examples and the explanation of the most important shortcoming can be found in this file.
 
 ## Table of Contents
 
@@ -12,6 +12,8 @@
     - [3. Checking loanAmount and loanPeriod In the `verifyInputs()`](#3-checking-loanamount-and-loanperiod-in-the-verifyinputs-method)
     - [4. Implementation of `getCreditModifier()`](#4-implementation-of-getcreditmodifier-method)
 - [Most important shortcoming of TICKET-101](#most-important-shortcoming-of-ticket-101)
+  - [The fix](#the-fix)
+  - [The optimized fix - O(log n)](#the-optimized-fix---olog-n)
 
 # Feedback for intern
 

@@ -1,5 +1,8 @@
 # InBank Backend Service
 
+### Link to TICKET-101 conclusion file: [TICKET-101_conclusion.md](TICKET-101_conclusion.md)
+
+<br> 
 This service provides a REST API for calculating an approved loan amount and period for a customer.
 The loan amount is calculated based on the customer's credit modifier, which is determined by the last four
 digits of their ID code.
